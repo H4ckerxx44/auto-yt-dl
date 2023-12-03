@@ -179,7 +179,7 @@ def download_video(video_url, path):
 
 def check_for_new_url_from_playlist(playlist_url):
     playlist_name = get_playlist_name(playlist_url)
-    msg = f"Searching for new videos of {playlist_name}" + playlist_name
+    msg = f"Searching for new videos of {playlist_name}"
     print(msg)
     logging.info(msg)
     video_urls = get_video_urls(playlist_url)
