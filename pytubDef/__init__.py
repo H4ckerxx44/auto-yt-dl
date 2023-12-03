@@ -1,142 +1,148 @@
-import string
 import pytubDef
 from configparser import ConfigParser
 import logging
 from yt_dlp import YoutubeDL
 
+
+# Magic numbers
+INTERVAL_LIMIT = 60
+
+# Constants for reused messages in logging / printing
+CONFIG_DOES_NOT_EXIST = "Config does not seem to exist, creating a new one"
+
+# File names
+CONFIG_FILE = "data/config.ini"
+MONITORED_PLAYLIST = "data/monitoredPlaylist.txt"
+
+
 def log():
     try:
-        file = "data/config.ini"
+        file = CONFIG_FILE
         config = ConfigParser()
         config.read(file)
-        logging.debug("Returning log bool from config" + str(config.getboolean("Settings", "log")))
+        logging.debug(f"Returning log bool from config {str(config.getboolean('Settings', 'log'))}")
         try:
             return config.getboolean("Settings", "log")
         except:
             config.set("Settings", "log", "False")
-            with open('data/config.ini', 'w') as conf:
+            with open(CONFIG_FILE, "r") as conf:
                 config.write(conf)
             return log()
     except Exception as e:
         logging.debug(e)
-        logging.info("Config does not seem to exist, creating a new one")
-        createConfig()
+        logging.info(CONFIG_DOES_NOT_EXIST)
+        create_config()
         return log()
 
 
 def loop():
-    playlistArray = returnMonitoredPlaylist()
+    playlists = return_monitored_playlist()
 
-    for m in range(len(playlistArray)):
+    for playlist in playlists:
         try:
-            checkForNewURLFromPlaylist(str(playlistArray[m]))
+            check_for_new_url_from_playlist(str(playlist))
         except Exception as e:
             logging.debug(e)
-            logging.error("Something went wrong while checkig for new Videos from " + playlistArray[m])
-            print("Oops. Something went wrong while checkig for new Videos: " + str(e))
+            logging.error(f"Something went wrong while checking for new Videos from {playlist}")
+            print(f"Oops. Something went wrong while checking for new Videos: {str(e)}")
 
 
-def returnInterval():
+def return_interval():
     try:
-        file = "data/config.ini"
         config = ConfigParser()
-        config.read(file)
+        config.read(CONFIG_FILE)
         logging.debug("Returning interval from config" + str(config["Settings"]["interval"]))
         return config["Settings"]["interval"]
     except Exception as e:
         logging.debug(e)
-        logging.info("Config does not seem to exist, creating a new one")
-        createConfig()
-        return returnInterval()
+        logging.info(CONFIG_DOES_NOT_EXIST)
+        create_config()
+        return return_interval()
 
 
-def returnChannelDir():
+def return_channel_dir():
     try:
-        file = "data/config.ini"
         config = ConfigParser()
-        config.read(file)
+        config.read(CONFIG_FILE)
         logging.debug("Returning channelDir from config" + str(config.getboolean("Settings", "channelDir")))
         return config.getboolean("Settings", "channelDir")
     except Exception as e:
         logging.debug(e)
-        logging.info("Config does not seem to exist, creating a new one")
-        createConfig()
-        return returnChannelDir()
+        logging.info(CONFIG_DOES_NOT_EXIST)
+        create_config()
+        return return_channel_dir()
 
 
-def returnYTAgent():
+def return_yt_agent():
     try:
-        file = "data/config.ini"
         config = ConfigParser()
-        config.read(file)
+        config.read(CONFIG_FILE)
         logging.debug("Returning ytagent from config" + str(config.getboolean("Settings", "ytagent")))
         return config.getboolean("Settings", "ytagent")
     except Exception as e:
         logging.debug(e)
-        logging.info("Config does not seem to exist, creating a new one")
-        createConfig()
-        return returnChannelDir()
+        logging.info(CONFIG_DOES_NOT_EXIST)
+        create_config()
+        return return_channel_dir()
 
 
-def updateInterval(interval: int):
-    if interval > 59:
+def update_interval(interval: int):
+    # TODO: turn magic number into constant
+    if interval >= INTERVAL_LIMIT:
         try:
-            file = "data/config.ini"
             config = ConfigParser()
-            config.read(file)
+            config.read(CONFIG_FILE)
             config.set("Settings", "interval", str(interval))
-            with open(file, 'w') as configfile:
+            with open(CONFIG_FILE, "w") as configfile:
                 config.write(configfile)
-            logging.info("New interval " + str(interval) + " set")
+            logging.info(f"New interval {interval} set")
         except Exception as e:
             logging.debug(e)
-            logging.info("Config does not seem to exist, creating a new one")
-            createConfig()
-            updateInterval(interval)
+            logging.info(CONFIG_DOES_NOT_EXIST)
+            create_config()
+            update_interval(interval)
     else:
-        logging.info("Illegal interval: " + str(interval))
-        print("Interval must be atleast 60")
+        logging.info(f"Illegal interval: {interval}")
+        print(f"Interval must be at least {INTERVAL_LIMIT}")
 
 
-def toggleChannelDir():
+def toggle_channel_dir():
     try:
-        file = "data/config.ini"
         config = ConfigParser()
-        config.read(file)
-        if returnChannelDir():
+        config.read(CONFIG_FILE)
+        if return_channel_dir():
             config.set("Settings", "channelDir", "False")
         else:
             config.set("Settings", "channelDir", "True")
-        with open(file, 'w') as configfile:
+        with open(CONFIG_FILE, "w") as configfile:
             config.write(configfile)
         logging.info("Toggled channelDir")
     except Exception as e:
         logging.debug(e)
-        logging.info("Config does not seem to exist, creating a new one")
-        createConfig()
-        toggleChannelDir()
+        logging.info(CONFIG_DOES_NOT_EXIST)
+        create_config()
+        toggle_channel_dir()
 
 
-def toggleYtAgent():
+def toggle_yt_agent():
     try:
-        file = "data/config.ini"
         config = ConfigParser()
-        config.read(file)
-        if returnYTAgent():
+        config.read(CONFIG_FILE)
+        if return_yt_agent():
             config.set("Settings", "ytagent", "False")
         else:
             config.set("Settings", "ytagent", "True")
-        with open(file, 'w') as configfile:
+        with open(CONFIG_FILE, "w") as configfile:
             config.write(configfile)
         logging.info("Toggled ytagent")
     except Exception as e:
         logging.debug(e)
-        logging.info("Config does not seem to exist, creating a new one")
-        createConfig()
-        toggleYtAgent()
+        logging.info(CONFIG_DOES_NOT_EXIST)
+        create_config()
+        toggle_yt_agent()
 
 
-def createConfig():
+def create_config():
     config_object = ConfigParser()
     config_object["Settings"] = {
         "interval": "900",
@@ -144,141 +150,129 @@ def createConfig():
         "ytagent": "False",
         "log": "False"
     }
-    with open('data/config.ini', 'w') as conf:
+    with open(CONFIG_FILE, "w") as conf:
         config_object.write(conf)
     logging.info("New config has been created")
 
 
-def downloadVideo(video_url, path):
+def download_video(video_url, path):
     logging.info("Downloading: " + video_url)
     print("Downloading new Video: " + video_url)
     try:
-        if returnYTAgent():
+        if return_yt_agent():
+            outtmpl = f"{path}/[%(id)s].mp4"
             ydl_opts = {
-                'outtmpl': path + "/[" + "%(id)s" + "].mp4", 'cachedir': "data/cache"
+                "outtmpl": outtmpl, "cachedir": "data/cache"
             }
         else:
+            outtmpl = f"{path}/%(title)s.mp4"
             ydl_opts = {
-                'outtmpl': path + "/%(title)s.mp4", 'cachedir': "data/cache"
+                "outtmpl": outtmpl, "cachedir": "data/cache"
             }
         with YoutubeDL(ydl_opts) as ydl:
             ydl.download(video_url)
     except:
-        print("Failed to download video: " + video_url + ". Is it a livestream?")
+        print(f"Failed to download video: {video_url}. Is it a livestream?")
         return False
     return True
 
 
-def checkForNewURLFromPlaylist(playlist_url):
-    playlist_name = getPlaylistName(playlist_url)
-    foundNewVid = 0
-    print("Searching for new videos of " + playlist_name)
-    logging.info("Searching for new videos of " + playlist_name)
-    video_urls = videoURLs(playlist_url)
-    for n in range(len(video_urls)):
-        if not urlAlreadyWritten(video_urls[n], playlist_name):
-            foundNewVid += 1
-            if downloadVideo(video_urls[n],
-                             compute_path(video_urls[n], playlist_name, getPlaylistID(playlist_url))):
-                writeChannelURLtoFile(playlist_name, video_urls[n])
+def check_for_new_url_from_playlist(playlist_url):
+    playlist_name = get_playlist_name(playlist_url)
+    msg = f"Searching for new videos of {playlist_name}" + playlist_name
+    print(msg)
+    logging.info(msg)
+    video_urls = get_video_urls(playlist_url)
+    for video_url in video_urls:
+        if not url_already_written(video_url, playlist_name):
+            if download_video(video_url, compute_path(video_url, playlist_name, get_playlist_id(playlist_url))):
+                write_channel_url_to_file(playlist_name, video_url)
 
 
-def writeChannelURLtoFile(playlist_name, url: string):
+def write_channel_url_to_file(playlist_name, url: str):
     try:
-        urlFile = open("data/" + replaceIllegalCharacters(playlist_name) + ".txt", "rt")
-        print(playlist_name + "´s URL-File already exist")
+        url_file = open(f"data/{replace_illegal_characters(playlist_name)}.txt")
+        print(f"{playlist_name}´s URL-File already exist")
     except Exception as e:
         logging.debug(e)
-        urlFile = open("data/" + replaceIllegalCharacters(playlist_name) + ".txt", "x")
-        urlFile.mode = "rt"
-        print(playlist_name + "´s URL-File does not exist, created File")
+        url_file = open("data/" + replace_illegal_characters(playlist_name) + ".txt", "x")
+        url_file.mode = "rt"
+        print(f"{playlist_name}´s URL-File does not exist, created File")
         logging.info("Created new .txt for" + playlist_name)
 
-    urlFile.close()
+    url_file.close()
 
-    if not urlAlreadyWritten(url, playlist_name):
-        urlFile = open("data/" + replaceIllegalCharacters(playlist_name) + ".txt", "a")
-        urlFile.writelines(" \n" + url)
-        urlFile.close()
-        print("Writing URL to " + playlist_name)
-        logging.info("Added new URL to " + playlist_name + ":" + url)
+    if not url_already_written(url, playlist_name):
+        url_file = open("data/" + replace_illegal_characters(playlist_name) + ".txt", "a")
+        url_file.writelines(" \n" + url)
+        url_file.close()
+        print(f"Writing URL to {playlist_name}")
+        logging.info(f"Added new URL to {playlist_name}: {url}")
     else:
-        logging.info("URL: " + url + " already saved in " + playlist_name)
+        logging.info(f"URL: {url} already saved in {playlist_name}")
         print("URL is already written")
 
 
 def compute_path(url, name, ident):
-    logging.info("Found new video of" + name + ": " + url)
-    print("Found and downloading a new URL from " + name)
-    if returnChannelDir():
-        path = "Downloads/" + replaceIllegalCharacters(str(name))
+    logging.info(f"Found new video of {name}: {url}")
+    print(f"Found and downloading a new URL from {name}")
+    if return_channel_dir():
+        path = f"Downloads/{replace_illegal_characters(str(name))}"
     else:
         path = "Downloads"
-    if returnYTAgent():
-        path = "Downloads/[" + str(ident) + "]"
-    logging.info("Initiating download of " + url)
+    if return_yt_agent():
+        path = f"Downloads/[{str(ident)}]"
+    logging.info(f"Initiating download of {url}")
     return path
 
 
-def urlAlreadyWritten(url: string, channelName: string):
-    urlFile = open("data/" + replaceIllegalCharacters(channelName) + ".txt", "rt")
-    endOfFileNotReached = True
-    returnBool = False
-    while endOfFileNotReached:
-
-        line = urlFile.readline()
-
-        if line == "":
-            urlFile.close()
-            endOfFileNotReached = False
-
-        if str(url) in str(line):
-            endOfFileNotReached = False
-            returnBool = True
-            urlFile.close()
-
-    return returnBool
+def url_already_written(url: str, channel_name: str):
+    with open(f"data/{replace_illegal_characters(channel_name)}.txt") as url_file:
+        file_content = url_file.readlines()
+    return True if url in file_content else False
 
 
-def newMonitoredPlaylist(playlist_url: string):
-    logging.info("Adding new playlist/channel:" + playlist_url)
+def new_monitored_playlist(playlist_url: str):
+    logging.info(f"Adding new playlist/channel: {playlist_url}")
     try:
-        playlistName = getPlaylistName(playlist_url)
-        actualUrl = getPlaylistURL(playlist_url)
+        playlist_name = get_playlist_name(playlist_url)
+        actual_url = get_playlist_url(playlist_url)
 
-        for playlistURLs in returnMonitoredPlaylist():
-            if actualUrl in playlistURLs:
-                logging.info("Playlist " + playlist_url + " is already monitored (URL in monitoredPlaylist.txt " +
-                             playlistURLs + ")")
-                print("Playlist " + playlist_url + " is already monitored (URL in monitoredPlaylist.txt " + playlistURLs
-                      + ")")
+        for playlist_urls in return_monitored_playlist():
+            if actual_url in playlist_urls:
+                msg = f"Playlist {playlist_url} is already monitored (URL in monitoredPlaylist.txt {playlist_urls})"
+                logging.info(msg)
+                print(msg)
                 return False
-        monitoredPlaylistFile = open("data/monitoredPlaylist.txt", "a")
-        monitoredPlaylistFile.write(" \n" + actualUrl)
-        monitoredPlaylistFile.close()
-        urlFile = open("data/" + replaceIllegalCharacters(playlistName) + ".txt", "x")
-        for video in videoURLs(playlist_url):
-            urlFile.write(" \n" + video)
-        urlFile.close()
+        with open(MONITORED_PLAYLIST, "a") as monitored_playlist_file:
+            monitored_playlist_file.write(" \n" + actual_url)
+
+        with open(f"data/{replace_illegal_characters(playlist_name)}.txt/", "x") as urlFile:
+            for video in get_video_urls(playlist_url):
+                urlFile.write(f" \n{video}")
+
     except Exception as e:
-        logging.debug("Something wrent wrong while adding playlist: " + e)
-        print("Something wrent wrong while adding playlist: " + e)
+        msg = f"Something went wrong while adding playlist: {e}"
+        logging.debug(msg)
+        print(msg)
 
 
-def replaceIllegalCharacters(dirtyString: str):
-    tmp = dirtyString
-    tmp = tmp.replace("<", "").replace(">", "").replace(":", "").replace('"', "").replace("/", "").replace("\\", "")
-    return tmp.replace("|", "").replace("?", "").replace("*", "")
+def replace_illegal_characters(dirty_string: str):
+    tmp = dirty_string
+    illegal_chars = ("<", ">", ":", '"', "/", "\\", "|", "?", "*")
+    for illegal_char in illegal_chars:
+        tmp = tmp.replace(illegal_char, "")
+    return tmp
 
 
-def videoURLs(playlist_url):
-
-    ydl_opts = {"extract_flat": True, 'outtmpl': '%(id)s.%(ext)s', 'cachedir': "data/cache"}
+def get_video_urls(playlist_url):
+    ydl_opts = {"extract_flat": True, "outtmpl": "%(id)s.%(ext)s", "cachedir": "data/cache"}
     with YoutubeDL(ydl_opts) as ydl:
         result = ydl.extract_info(playlist_url, download=False)
 
     videos = []
-    for n in range(0, len(result["entries"])):
+
+    for n in range(len(result["entries"])):
         try:
             for vid in result['entries'][n]['entries']:
                 videos.append("https://www.youtube.com/watch?v=" + vid["id"])
@@ -286,25 +280,25 @@ def videoURLs(playlist_url):
             try:
                 videos.append("https://www.youtube.com/watch?v=" + result['entries'][n]["id"])
             except Exception as e:
-                print("Could not fetch videos from " + playlist_url + ": " + str(e))
+                print(f"Could not fetch videos from {playlist_url}: {str(e)}")
     return videos
 
 
-def getPlaylistName(playlist_url):
+def get_playlist_name(playlist_url):
     try:
-        file = "data/config.ini"
+        file = CONFIG_FILE
         config = ConfigParser()
         config.read(file)
         logging.debug("Returning playlist name from config" + str(config[playlist_url]["name"]))
         return config[playlist_url]["name"]
     except Exception as e:
         logging.debug(e)
-        logging.info("Config entry for " + playlist_url + "does not seem to exist, creating a new one")
-        createPlaylistConfigEntry(playlist_url)
-        return getPlaylistName(playlist_url)
+        logging.info(f"Config entry for {playlist_url} does not seem to exist, creating a new one")
+        create_playlist_config_entry(playlist_url)
+        return get_playlist_name(playlist_url)
 
 
-def getPlaylistURL(playlist_url):
+def get_playlist_url(playlist_url):
     ydl_opts = {
         'playlist_items': '1', 'cachedir': "data/cache"
     }
@@ -313,9 +307,9 @@ def getPlaylistURL(playlist_url):
     return result['webpage_url']
 
 
-def createPlaylistConfigEntry(url):
+def create_playlist_config_entry(url):
     config_object = ConfigParser()
-    playlist_data = getPlaylistIDInformation(url)
+    playlist_data = get_playlist_id_information(url)
     config_object[url] = {
         "id": playlist_data[0],
         "name": playlist_data[1],
@@ -325,9 +319,9 @@ def createPlaylistConfigEntry(url):
     logging.info("New config entry for " + url + " has been created")
 
 
-def getPlaylistID(playlist_url):
+def get_playlist_id(playlist_url):
     try:
-        file = "data/config.ini"
+        file = CONFIG_FILE
         config = ConfigParser()
         config.read(file)
         logging.debug("Returning playlist id from config" + str(config[playlist_url]["id"]))
@@ -335,11 +329,11 @@ def getPlaylistID(playlist_url):
     except Exception as e:
         logging.debug(e)
         logging.info("Config entry for " + playlist_url + "does not seem to exist, creating a new one")
-        createPlaylistConfigEntry(playlist_url)
-        return getPlaylistID(playlist_url)
+        create_playlist_config_entry(playlist_url)
+        return get_playlist_id(playlist_url)
 
 
-def getPlaylistIDInformation(playlist_url):
+def get_playlist_id_information(playlist_url):
     information = []
     # Fetch the playlists ID
     ydl_opts = {
@@ -355,38 +349,39 @@ def getPlaylistIDInformation(playlist_url):
     return information
 
 
-def returnMonitoredPlaylist():
+def return_monitored_playlist():
+    # TODO: replace with actual logic about config file creation
+    #  catch FileNotFound exceptions
     try:
-        monitoredPlaylistFile = open("data/monitoredPlaylist.txt", "rt")
+        monitored_playlist_file = open(MONITORED_PLAYLIST)
     except Exception as e:
         logging.debug(e)
         logging.info("monitoredPlaylist.txt does not seem to exist, creating a new one")
-        monitoredPlaylistFile = open("data/monitoredPlaylist.txt", "x")
-        monitoredPlaylistFile.mode = "r"
+        monitored_playlist_file = open(MONITORED_PLAYLIST, "x")
+        monitored_playlist_file.mode = "r"
         logging.info("monitoredPlaylist.txt created")
 
-    lines = monitoredPlaylistFile.readlines()
-    monitoredPlaylistFile.close()
+    lines = monitored_playlist_file.readlines()
+    monitored_playlist_file.close()
 
-    playlistURLs = []
+    playlist_urls = []
     for line in lines:
         if "https://" in line:
-            playlistURLs.append(line.replace("\n", "").replace(" ", ""))
+            playlist_urls.append(line.replace("\n", "").replace(" ", ""))
 
-    return playlistURLs
+    return playlist_urls
 
 
-def removeMonitoredPlaylist(oldPlaylistURL: string):
-    logging.info("Removing " + oldPlaylistURL + "from monitored playlists")
-    monitoredPlaylistFile = open("data/monitoredPlaylist.txt", "rt")
-    playlistURLs = monitoredPlaylistFile.readlines()
-    monitoredPlaylistFile.close()
+def remove_monitored_playlist(old_playlist_url: str):
+    logging.info(f"Removing {old_playlist_url} from monitored playlists")
+    with open(MONITORED_PLAYLIST) as monitored_playlist_file:
+        playlist_urls = monitored_playlist_file.readlines()
 
-    for n in range(len(playlistURLs)):
-        if oldPlaylistURL in playlistURLs[n]:
-            del playlistURLs[n]
+    for playlist_url in playlist_urls:
+        if old_playlist_url == playlist_url:
+            del playlist_url
             break
 
-    monitoredPlaylistFile = open("data/monitoredPlaylist.txt", "w")
-    for n in range(len(playlistURLs)):
-        monitoredPlaylistFile.write(playlistURLs[n])
+    with open(MONITORED_PLAYLIST, "w") as monitored_playlist_file:
+        for playlist_url in playlist_urls:
+            monitored_playlist_file.write(playlist_url)
